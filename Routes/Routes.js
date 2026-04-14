@@ -10,6 +10,8 @@ const CarouselController = require('../Controller/GalleryController');
 const CategoryController = require('../Controller/CategoryController');
 const BadgeController = require('../Controller/BadgeController');
 const OtpController = require('../Controller/OtpController');
+const SettingsController = require('../Controller/SettingController');
+const OfferController = require('../Controller/OfferController');
 
 router.post('/set-admin', async (req, res) => {
   const { email } = req.body;
@@ -105,7 +107,24 @@ router.patch('/admin/collections/reorder', verifyAdmin, CarouselController.reord
 // Public collection route
 router.get('/collections', CarouselController.getPublicCollections);
 
+router.get('/settings/homepage', SettingsController.getHomepageSettings);
+router.put('/settings/homepage', verifyAdmin, SettingsController.updateHomepageSettings);
 
+// Budget selections routes
+router.get('/settings/budget-selections', SettingsController.getBudgetSelections);
+router.put('/settings/budget-selections', verifyAdmin, SettingsController.updateBudgetSelections);
+
+router.post('/admin/offers', verifyAdmin, OfferController.createOffer);
+router.get('/admin/offers', verifyAdmin, OfferController.getOffers);
+router.get('/admin/offers/:id', verifyAdmin, OfferController.getOffer);
+router.put('/admin/offers/:id', verifyAdmin, OfferController.updateOffer);
+router.delete('/admin/offers/:id', verifyAdmin, OfferController.deleteOffer);
+router.post('/admin/products/:productId/apply-offer', verifyAdmin, OfferController.applyOfferToProduct);
+router.delete('/admin/products/:productId/remove-offer', verifyAdmin, OfferController.removeOfferFromProduct);
+
+// Public offer routes
+router.get('/offers/active', OfferController.getActiveOffersWithProducts);
+router.get('/offers/:offerId/products', OfferController.getProductsByOffer);
 
 router.get('/admin/dashboard', verifyAdmin, (req, res) => {
   res.json({ 
