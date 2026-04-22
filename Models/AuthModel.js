@@ -8,6 +8,9 @@ const firebaseConfig = {
   apiKey: process.env.FIREBASE_WEB_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
   projectId: process.env.FIREBASE_PROJECT_ID
+  // apiKey: 'AIzaSyD4lwNw3wXS0dsqhBgKq7cDvZyZA5IEOuI',
+  // authDomain: 'saadhvi-silks.firebaseapp.com',
+  // projectId: 'saadhvi-silks'
 };
 
 // Initialize CLIENT app
@@ -279,3 +282,238 @@ static async linkPhoneToAccount(uid, phoneNumber, otp) {
 }
 
 module.exports = AuthModel;
+
+// const { admin, rtdb } = require('../Config/firebaseAdmin');
+// const { clientAuth } = require('../Config/firebaseClient');
+// const { 
+//   signInWithEmailAndPassword, 
+//   createUserWithEmailAndPassword 
+// } = require('firebase/auth');
+// const OtpModel = require('./OtpModel');
+
+// class AuthModel {
+
+//   static async sendPhoneOtp(phoneNumber) {
+//     return await OtpModel.sendOtp(phoneNumber);
+//   }
+
+//   static async authenticateWithPhone(phoneNumber, otp, name = null) {
+//     try {
+//       // 1. Verify OTP
+//       const otpResult = await OtpModel.verifyOtp(phoneNumber, otp);
+//       if (!otpResult.success) {
+//         return otpResult;
+//       }
+      
+//       const cleanedPhone = otpResult.phoneNumber;
+      
+//       // 2. Check if user exists with this phone number
+//       let userRecord;
+//       try {
+//         userRecord = await admin.auth().getUserByPhoneNumber(`+${cleanedPhone}`);
+//         console.log(`✅ Existing user found with phone: ${cleanedPhone}`);
+//       } catch (error) {
+//         if (error.code === 'auth/user-not-found') {
+//           const userData = {
+//             phoneNumber: `+${cleanedPhone}`,
+//             displayName: name || `User_${cleanedPhone.slice(-4)}`
+//           };
+          
+//           userRecord = await admin.auth().createUser(userData);
+//           console.log(`✅ New user created with phone: ${cleanedPhone}`);
+          
+//           await rtdb.ref('users/' + userRecord.uid).set({
+//             phoneNumber: cleanedPhone,
+//             name: name || `User_${cleanedPhone.slice(-4)}`,
+//             createdAt: new Date().toISOString(),
+//             role: 'user',
+//             authMethod: 'phone'
+//           });
+//         } else {
+//           throw error;
+//         }
+//       }
+      
+//       // 3. Generate custom token
+//       const customToken = await admin.auth().createCustomToken(userRecord.uid);
+      
+//       // 4. Clear OTP from store
+//       OtpModel.clearOtp(cleanedPhone);
+      
+//       // 5. Get user data
+//       const userSnapshot = await rtdb.ref('users/' + userRecord.uid).once('value');
+//       const userData = userSnapshot.val() || {};
+      
+//       return {
+//         success: true,
+//         token: customToken,
+//         uid: userRecord.uid,
+//         phoneNumber: cleanedPhone,
+//         name: userData.name || userRecord.displayName,
+//         isNewUser: !userData.createdAt
+//       };
+      
+//     } catch (error) {
+//       console.error("❌ Phone Auth Error:", error);
+//       return { success: false, error: error.message };
+//     }
+//   }
+
+//   static async linkPhoneToAccount(uid, phoneNumber, otp) {
+//     try {
+//       const otpResult = await OtpModel.verifyOtp(phoneNumber, otp);
+//       if (!otpResult.success) {
+//         return otpResult;
+//       }
+      
+//       const cleanedPhone = otpResult.phoneNumber;
+      
+//       await admin.auth().updateUser(uid, {
+//         phoneNumber: `+${cleanedPhone}`
+//       });
+      
+//       await rtdb.ref('users/' + uid).update({
+//         phoneNumber: cleanedPhone,
+//         phoneVerified: true,
+//         phoneLinkedAt: new Date().toISOString()
+//       });
+      
+//       OtpModel.clearOtp(cleanedPhone);
+      
+//       return { success: true, message: 'Phone number linked successfully' };
+      
+//     } catch (error) {
+//       console.error("❌ Link Phone Error:", error);
+//       return { success: false, error: error.message };
+//     }
+//   }
+
+//   static async verifyToken(idToken) {
+//     try {
+//       const decodedToken = await admin.auth().verifyIdToken(idToken, true);
+//       return { success: true, decodedToken };
+//     } catch (error) {
+//       return { success: false, error: error.message };
+//     }
+//   }
+
+//   static async isAdmin(uid) {
+//     try {
+//       const user = await admin.auth().getUser(uid);
+//       return user.customClaims && user.customClaims.admin === true;
+//     } catch (error) {
+//       console.error("🔥 isAdmin Error:", error.message);
+//       return false;
+//     }
+//   }
+
+//   static async registerUser(username, email, password) {
+//     try {
+//       const userCredential = await createUserWithEmailAndPassword(clientAuth, email, password);
+//       console.log("✅ User created with Client SDK");
+      
+//       const uid = userCredential.user.uid;
+      
+//       await rtdb.ref('users/' + uid).set({
+//         username: username,
+//         email: email,
+//         createdAt: new Date().toISOString(),
+//         role: 'user'
+//       });
+
+//       const customToken = await admin.auth().createCustomToken(uid);
+      
+//       return { 
+//         success: true, 
+//         token: customToken,
+//         uid: uid,
+//         username: username
+//       };
+      
+//     } catch (error) {
+//       console.error("🔥 Registration Error:", error.message);
+//       if (error.code === 'auth/email-already-in-use') {
+//         return { success: false, error: "Email already exists" };
+//       }
+//       if (error.code === 'auth/weak-password') {
+//         return { success: false, error: "Password is too weak" };
+//       }
+//       return { success: false, error: "Registration failed" };
+//     }
+//   }
+
+//   static async loginUser(email, password) {
+//     try {
+//       const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
+//       console.log("✅ Password verified with Client SDK");
+      
+//       const uid = userCredential.user.uid;
+      
+//       const userSnapshot = await rtdb.ref('users/' + uid).once('value');
+//       const userData = userSnapshot.val();
+      
+//       if (!userData) {
+//         return { success: false, error: "User data not found" };
+//       }
+
+//       const customToken = await admin.auth().createCustomToken(uid);
+      
+//       return { 
+//         success: true, 
+//         token: customToken,
+//         uid: uid,
+//         username: userData.username,
+//         email: userData.email
+//       };
+      
+//     } catch (error) {
+//       console.error("🔥 Login Error:", error.message);
+//       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+//         return { success: false, error: "Invalid email or password" };
+//       }
+//       return { success: false, error: "Login failed" };
+//     }
+//   }
+
+//   static async adminLogin(email, password) {
+//     try {
+//       const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
+//       console.log("✅ Password verified with Client SDK");
+      
+//       const uid = userCredential.user.uid;
+      
+//       const isAdmin = await this.isAdmin(uid);
+//       if (!isAdmin) {
+//         console.log("❌ User is not an admin");
+//         await clientAuth.signOut();
+//         return { success: false, error: "Not an admin user" };
+//       }
+
+//       const customToken = await admin.auth().createCustomToken(uid);
+      
+//       return { 
+//         success: true, 
+//         token: customToken,
+//         uid: uid 
+//       };
+      
+//     } catch (error) {
+//       console.error("🔥 Admin Login Error:", error.message);
+//       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+//         return { success: false, error: "Invalid credentials" };
+//       }
+//       return { success: false, error: "Invalid credentials" };
+//     }
+//   }
+
+//   static async verifyCustomToken(customToken) {
+//     try {
+//       const decodedToken = await admin.auth().verifyIdToken(customToken);
+//       return { success: true, decodedToken };
+//     } catch (error) {
+//       return { success: false, error: error.message };
+//     }
+//   }
+// }
+
+// module.exports = AuthModel;

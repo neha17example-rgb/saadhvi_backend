@@ -80,6 +80,7 @@
 // });
 
 // exports.api = onRequest(app);
+
 require('dotenv').config();
 const functions = require('firebase-functions');
 const express = require('express');
@@ -108,3 +109,31 @@ app.listen(PORT, () => {
 
 // Export for Firebase
 exports.api = functions.https.onRequest(app);
+
+// const functions = require('firebase-functions');
+// const admin = require('firebase-admin');
+// const express = require('express');
+// const cors = require('cors');
+
+// // Initialize Firebase Admin SDK
+// admin.initializeApp();
+
+// const app = express();
+
+// // Middleware
+// app.use(cors({ origin: true }));
+// app.use(express.json({ limit: '10mb' }));
+
+// // Import your routes
+// const routes = require('./Routes/Routes');
+
+// // Health check route
+// app.get("/", (req, res) => {
+//   res.status(200).send("Backend is running");
+// });
+
+// // Use your routes
+// app.use('/', routes);
+
+// // Export the API for Firebase Functions
+// exports.api = functions.https.onRequest(app);
