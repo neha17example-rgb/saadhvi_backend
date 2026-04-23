@@ -283,30 +283,29 @@ static async updateProduct(id, productData, imageFiles = []) {
     // ========== END OF FIX ==========
 
     const updates = {
-      name: productData.name,
-      description: productData.description,
-      categories: categories, // Now this will always be an array
-      price: parseInt(productData.price) || 0,
-      originalPrice: parseInt(productData.originalPrice) || 0,
-      stock: parseInt(productData.stock) || 0, 
-      badge: productData.badge || '',
-      material: productData.material || '',
-      length: productData.length || '',
-      weave: productData.weave || '',
-      care: productData.care || '',
-      weight: productData.weight || '',
-      border: productData.border || '',
-      origin: productData.origin || '',
-      sizeGuide: productData.sizeGuide || '',
-      extraCharges: productData.extraCharges || '',
-      occasion: productData.occasion || [],
-      images: imageUrls, 
-      isVisible: productData.isVisible !== undefined
-          ? productData.isVisible === 'true' || productData.isVisible === true
-          : existingProduct.isVisible ?? true,
-      updatedAt: admin.database.ServerValue.TIMESTAMP
-    };
-
+  name: productData.name,
+  description: productData.description || '',
+  categories: categories,
+  price: parseInt(productData.price) || 0,
+  originalPrice: parseInt(productData.originalPrice) || 0,
+  stock: parseInt(productData.stock) || 0, 
+  badge: productData.badge || '',
+  material: productData.material || '',
+  work: productData.work || '', // NEW
+  bodyColor: productData.bodyColor || '', // NEW
+  blouseColor: productData.blouseColor || '', // NEW
+  type: productData.type || '', // NEW
+  length: productData.length || '',
+  care: productData.care || '',
+  border: productData.border || '',
+  extraCharges: productData.extraCharges || 0,
+  occasion: productData.occasion || [],
+  images: imageUrls, 
+  isVisible: productData.isVisible !== undefined
+      ? productData.isVisible === 'true' || productData.isVisible === true
+      : existingProduct.isVisible ?? true,
+  updatedAt: admin.database.ServerValue.TIMESTAMP
+};
     await admin.database().ref(`products/${id}`).update(updates);
     console.log('✅ Product updated:', id, 'Total images:', imageUrls.length);
     

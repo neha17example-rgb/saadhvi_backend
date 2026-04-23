@@ -153,7 +153,6 @@ static async updateStock(req, res) {
   }
 }
 
-// In ProductController.js
 static async getPublicProducts(req, res) {
   try {
     const result = await ProductModel.getProducts(false);
@@ -162,22 +161,22 @@ static async getPublicProducts(req, res) {
         id: product.id,
         name: product.name,
         description: product.description,
-        categories: product.categories || [], // Ensure categories is an array
+        categories: product.categories || [],
         price: product.price,
         originalPrice: product.originalPrice,
         stock: product.stock,
         badge: product.badge,
-        material: product.material,
-        length: product.length,
-        weave: product.weave,
-        care: product.care,
-        weight: product.weight,
-        border: product.border,
-        origin: product.origin,
-        sizeGuide: product.sizeGuide,
-        extraCharges: product.extraCharges,
-        occasion: product.occasion,
-        images: product.images,
+        material: product.material || '',
+        work: product.work || '', // NEW - ADD THIS
+        bodyColor: product.bodyColor || '', // NEW - ADD THIS
+        blouseColor: product.blouseColor || '', // NEW - ADD THIS
+        type: product.type || '', // NEW - ADD THIS
+        length: product.length || '',
+        care: product.care || '',
+        border: product.border || '',
+        extraCharges: product.extraCharges || 0,
+        occasion: product.occasion || [],
+        images: product.images || [],
         hasOffer: product.hasOffer || false,
         offerPrice: product.offerPrice || null,
         offerName: product.offerName || null,
@@ -205,22 +204,22 @@ static async getPublicProduct(req, res) {
         id: result.product.id,
         name: result.product.name,
         description: result.product.description,
-        categories: result.product.categories || [], // Ensure categories is an array
+        categories: result.product.categories || [],
         price: result.product.price,
         originalPrice: result.product.originalPrice,
         stock: result.product.stock,
         badge: result.product.badge,
-        material: result.product.material,
-        length: result.product.length,
-        weave: result.product.weave,
-        care: result.product.care,
-        weight: result.product.weight,
-        border: result.product.border,
-        origin: result.product.origin,
-        sizeGuide: result.product.sizeGuide,
-        extraCharges: result.product.extraCharges,
-        occasion: result.product.occasion,
-        images: result.product.images,
+        material: result.product.material || '',
+        work: result.product.work || '', // NEW - ADD THIS
+        bodyColor: result.product.bodyColor || '', // NEW - ADD THIS
+        blouseColor: result.product.blouseColor || '', // NEW - ADD THIS
+        type: result.product.type || '', // NEW - ADD THIS
+        length: result.product.length || '',
+        care: result.product.care || '',
+        border: result.product.border || '',
+        extraCharges: result.product.extraCharges || 0,
+        occasion: result.product.occasion || [],
+        images: result.product.images || [],
         hasOffer: result.product.hasOffer || false,
         offerPrice: result.product.offerPrice || null,
         offerName: result.product.offerName || null,
@@ -237,7 +236,6 @@ static async getPublicProduct(req, res) {
     res.status(500).json({ success: false, error: 'Server error' });
   }
 }
-
 static async getWishlist(req, res) {
     try {
       const userId = req.user.uid; // From verifyToken middleware
@@ -443,7 +441,7 @@ static async removeFromCart(req, res) {
 
 static async searchProducts(req, res) {
   try {
-    const { q } = req.query;
+    const { q, category } = req.query;
 
     // Validate search query
     if (!q || q.trim().length < 2) {
@@ -455,7 +453,28 @@ static async searchProducts(req, res) {
     }
 
     const searchTerm = q.trim().toLowerCase();
-    console.log(`🔍 Searching for: "${searchTerm}"`);
+    console.log(`🔍 Searching for: "${searchTerm}" with category filter: "${category || 'all'}"`);
+
+    // Fetch all categories to get ID to name mapping
+    const categoriesSnapshot = await admin.database().ref('categories').once('value');
+    const categoriesMap = {};
+    categoriesSnapshot.forEach(child => {
+      const cat = child.val();
+      categoriesMap[child.key] = cat.name;
+      categoriesMap[cat.name] = child.key; // Also map name to ID for reverse lookup
+    });
+
+    // If category is selected and not 'all', get the category ID
+    let selectedCategoryId = null;
+    if (category && category !== 'all' && category !== 'undefined' && category !== 'null') {
+      // Find category by name
+      for (const [id, name] of Object.entries(categoriesMap)) {
+        if (name === category) {
+          selectedCategoryId = id;
+          break;
+        }
+      }
+    }
 
     const snapshot = await admin.database().ref('products').once('value');
     const products = snapshot.val() || {};
@@ -465,34 +484,79 @@ static async searchProducts(req, res) {
     const results = Object.entries(products)
       .map(([id, product]) => {
         if (!product) return null;
+        if (product.isVisible === false) return null;
+        
+        // Normalize categories
+        let productCategories = [];
+        if (product.categories) {
+          if (Array.isArray(product.categories)) {
+            productCategories = product.categories;
+          } else if (typeof product.categories === 'string') {
+            if (product.categories.includes(',')) {
+              productCategories = product.categories.split(',').map(c => c.trim());
+            } else {
+              productCategories = [product.categories];
+            }
+          }
+        }
+        
+        // Get category names for display
+        const categoryNames = productCategories.map(catId => categoriesMap[catId] || catId);
         
         return {
           id,
           name: product.name || '',
-          image: (product.images && product.images[0]) || '/placeholder.jpg',
+          images: product.images || [],
           price: product.price || 0,
-          category: product.category || '',
+          originalPrice: product.originalPrice || 0,
           description: product.description || '',
+          categories: productCategories,
+          categoryNames: categoryNames,
+          category: product.category || '',
+          stock: product.stock || 0,
+          badge: product.badge || '',
+          material: product.material || '',
+          work: product.work || '',
+          bodyColor: product.bodyColor || '',
+          blouseColor: product.blouseColor || '',
+          type: product.type || '',
+          length: product.length || '',
+          care: product.care || '',
+          border: product.border || '',
+          occasion: product.occasion || [],
+          hasOffer: product.hasOffer || false,
+          offerPrice: product.offerPrice || null,
+          offerName: product.offerName || null,
         };
       })
       .filter(Boolean)
-      .filter(p => {
-        // More comprehensive search matching
-        const searchableText = `
-          ${p.name || ''} 
-          ${p.category || ''} 
-          ${p.description || ''}
-        `.toLowerCase();
+      .filter(product => {
+        // Search in product name and description
+        const nameMatch = product.name.toLowerCase().includes(searchTerm);
+        const descriptionMatch = product.description?.toLowerCase().includes(searchTerm) || false;
         
-        return searchableText.includes(searchTerm);
+        // If category filter is provided and not 'all'
+        if (selectedCategoryId) {
+          // Check if product belongs to the selected category by ID
+          const categoryMatch = product.categories.includes(selectedCategoryId);
+          return (nameMatch || descriptionMatch) && categoryMatch;
+        }
+        
+        return nameMatch || descriptionMatch;
       })
-      .slice(0, 8) // Reduced from 10 to 8 for better UI
-      .map(p => ({
-        id: p.id,
-        name: p.name,
-        image: p.image,
-        price: p.price,
-        category: p.category,
+      .slice(0, 10) // Limit to 10 results
+      .map(product => ({
+        id: product.id,
+        name: product.name,
+        image: (product.images && product.images[0]) || '/placeholder.jpg',
+        price: product.hasOffer && product.offerPrice ? product.offerPrice : product.price,
+        originalPrice: product.originalPrice,
+        category: product.categoryNames[0] || '',
+        categories: product.categories,
+        categoryNames: product.categoryNames,
+        hasOffer: product.hasOffer,
+        offerPrice: product.offerPrice,
+        offerName: product.offerName,
       }));
 
     console.log(`✅ Found ${results.length} results for "${searchTerm}"`);
