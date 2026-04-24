@@ -12,6 +12,7 @@ const BadgeController = require('../Controller/BadgeController');
 const OtpController = require('../Controller/OtpController');
 const SettingsController = require('../Controller/SettingController');
 const OfferController = require('../Controller/OfferController');
+const BottomBarController = require('../Controller/BottomBarController');
 
 router.post('/set-admin', async (req, res) => {
   const { email } = req.body;
@@ -96,6 +97,18 @@ router.get('/admin/main-gallery-image', verifyAdmin, CarouselController.getMainG
 router.post('/admin/main-gallery-image', verifyAdmin, upload.single('image'), CarouselController.uploadMainGalleryImage);
 router.delete('/admin/main-gallery-image', verifyAdmin, CarouselController.deleteMainGalleryImage);
 router.get('/main-gallery-image', CarouselController.getMainGalleryImage);
+
+router.get('/admin/bottom-bar', verifyAdmin, BottomBarController.getFeaturedCategories);
+router.post('/admin/bottom-bar', verifyAdmin, BottomBarController.addFeaturedCategory);
+router.put('/admin/bottom-bar/:id', verifyAdmin, BottomBarController.updateFeaturedCategory);
+router.delete('/admin/bottom-bar/:id', verifyAdmin, BottomBarController.removeFeaturedCategory);
+router.patch('/admin/bottom-bar/reorder', verifyAdmin, BottomBarController.reorderFeaturedCategories);
+router.patch('/admin/bottom-bar/:id/toggle', verifyAdmin, BottomBarController.toggleActiveStatus);
+router.get('/admin/bottom-bar/:id', verifyAdmin, BottomBarController.getFeaturedCategory);
+// Bottom Bar Routes (Public) - Add this with other public routes
+router.get('/bottom-bar/:id/products', BottomBarController.getProductsByCollection);
+// Bottom Bar Routes (Public)
+router.get('/bottom-bar', BottomBarController.getActiveFeaturedCategories);
 
 router.post('/admin/collections', verifyAdmin, upload.single('image'), CarouselController.addCollection);
 router.get('/admin/collections', verifyAdmin, CarouselController.getCollections);
