@@ -98,6 +98,7 @@ app.get("/", (req, res) => {
   res.status(200).send("Backend is running");
 });
 
+
 // Routes
 app.use('/', routes);
 

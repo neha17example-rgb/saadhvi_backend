@@ -27,6 +27,11 @@ router.post('/set-admin', async (req, res) => {
   }
 });
 
+// Add this health check endpoint
+router.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: Date.now() });
+});
+
 router.post('/login', AuthController.login);
 router.post('/user/register', AuthController.registerUser);
 
@@ -63,6 +68,8 @@ router.get('/badges', BadgeController.getBadges);
 router.get('/categories', CategoryController.getCategories);
 
 router.get('/products', ProductController.getPublicProducts);
+router.get('/products/lightweight', ProductController.getLightweightPublicProducts);
+
 router.get('/products/:id', ProductController.getPublicProduct);
 
 router.get('/products/search', ProductController.searchProducts);

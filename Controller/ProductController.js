@@ -674,7 +674,39 @@ static async reorderProducts(req, res) {
       res.status(500).json({ success: false, error: err.message });
     }
   }
+// functions/src/Controller/ProductController.js
 
+// Add this new method
+static async getLightweightPublicProducts(req, res) {
+  try {
+    const result = await ProductModel.getProducts(false);
+    if (result.success) {
+      // Return only essential fields for faster loading
+      const lightweightProducts = result.products.map(product => ({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        images: product.images?.slice(0, 1) || [],
+        categories: product.categories || [],
+        stock: product.stock,
+        badge: product.badge,
+        hasOffer: product.hasOffer || false,
+        offerPrice: product.offerPrice || null,
+        offerName: product.offerName || null,
+        displayOrder: product.displayOrder || null,
+        occasion: product.occasion || []
+      }));
+      
+      res.json({ success: true, products: lightweightProducts });
+    } else {
+      res.status(400).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('Lightweight Products Error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+}
 }
 
 module.exports = ProductController;
